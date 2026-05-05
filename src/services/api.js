@@ -13,7 +13,10 @@ export const streamChat = async (messages, onUpdate, onComplete, onError) => {
       },
       body: JSON.stringify({
         model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
-        messages: messages.map(m => ({ role: m.role, content: m.content })),
+        messages: [
+          { role: 'system', content: 'Tu es un assistant IA nommé AbyssIA. Règle très importante : tu dois IMPÉRATIVEMENT répondre dans la même langue que celle utilisée par l\'utilisateur. Si l\'utilisateur parle en français, réponds en français. Si l\'utilisateur parle en anglais, réponds en anglais.' },
+          ...messages.map(m => ({ role: m.role, content: m.content }))
+        ],
         stream: true,
       }),
     });

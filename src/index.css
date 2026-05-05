@@ -24,7 +24,7 @@ body {
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden; /* Prevent body scroll, layout will manage it */
 }
 
@@ -189,7 +189,7 @@ body {
 /* Layout Specifics */
 .app-container {
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   width: 100vw;
   padding: 16px;
   gap: 16px;
@@ -428,6 +428,8 @@ body {
   .app-container {
     padding: 8px;
     gap: 8px;
+    height: 100dvh;
+    height: 100svh; /* More reliable on some mobile browsers */
   }
   
   .sidebar {
@@ -435,6 +437,7 @@ body {
     left: 8px;
     top: 8px;
     bottom: 8px;
+    z-index: 100;
     transform: translateX(-120%);
   }
   

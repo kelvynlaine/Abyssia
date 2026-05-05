@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Menu, Sparkles, Maximize2, Minimize2 } from 'lucide-react';
+import { Send, Menu, Sparkles, Maximize2, Minimize2, Paperclip, X } from 'lucide-react';
 import { Message } from './Message';
 
 export const ChatInterface = ({
@@ -14,8 +14,28 @@ export const ChatInterface = ({
   onToggleFullscreen
 }) => {
   const [input, setInput] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState([]);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    const newFiles = await Promise.all(
+      files.map(async (file) => {
+        const text = await file.text();
+        return { name: file.name, content: text };
+      })
+    );
+    setAttachedFiles((prev) => [...prev, ...newFiles]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeFile = (index) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -27,10 +47,17 @@ export const ChatInterface = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!input.trim() || isStreaming) return;
+    if ((!input.trim() && attachedFiles.length === 0) || isStreaming) return;
     
-    onSendMessage(input);
+    let finalInput = input;
+    if (attachedFiles.length > 0) {
+      const filesContext = attachedFiles.map(f => `[Fichier importé : ${f.name}]\n\`\`\`\n${f.content}\n\`\`\``).join('\n\n');
+      finalInput = finalInput ? `${finalInput}\n\n${filesContext}` : filesContext;
+    }
+    
+    onSendMessage(finalInput);
     setInput('');
+    setAttachedFiles([]);
     
     // Reset textarea height
     if (inputRef.current) {
@@ -98,7 +125,38 @@ export const ChatInterface = ({
       </div>
 
       <div className="input-area">
+        {attachedFiles.length > 0 && (
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            {attachedFiles.map((file, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '16px', fontSize: '0.8rem', border: '1px solid var(--glass-border)' }}>
+                <Paperclip size={12} style={{ marginRight: '4px', color: 'var(--accent-1)' }} />
+                <span style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                <button onClick={() => removeFile(i)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', marginLeft: '6px', display: 'flex' }}>
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="input-container">
+          <input 
+            type="file" 
+            multiple 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            style={{ display: 'none' }} 
+            accept=".txt,.md,.js,.jsx,.ts,.tsx,.json,.css,.html,.csv,.py"
+          />
+          <button 
+            type="button" 
+            className="action-btn" 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isStreaming}
+            style={{ marginRight: '8px', flexShrink: 0 }}
+            title="Joindre un fichier texte"
+          >
+            <Paperclip size={20} />
+          </button>
           <textarea
             ref={inputRef}
             className="chat-input"
@@ -112,7 +170,7 @@ export const ChatInterface = ({
           <button 
             type="submit" 
             className="send-btn" 
-            disabled={!input.trim() || isStreaming}
+            disabled={(!input.trim() && attachedFiles.length === 0) || isStreaming}
           >
             <Send size={18} style={{ marginLeft: '2px' }} />
           </button>
