@@ -23,12 +23,24 @@ export const ChatInterface = ({
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
-    const newFiles = await Promise.all(
-      files.map(async (file) => {
+    const newFiles = [];
+    for (const file of files) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        alert(`Le fichier ${file.name} est trop volumineux (max 5MB).`);
+        continue;
+      }
+      try {
         const text = await file.text();
-        return { name: file.name, content: text };
-      })
-    );
+        // Check for binary or bad encoding
+        if (text.includes('\x00') || (text.match(//g) || []).length > 10) {
+          alert(`Le fichier ${file.name} semble binaire ou a un encodage non supporté.`);
+          continue;
+        }
+        newFiles.push({ name: file.name, content: text });
+      } catch (err) {
+        alert(`Impossible de lire le fichier ${file.name}.`);
+      }
+    }
     setAttachedFiles((prev) => [...prev, ...newFiles]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -49,13 +61,7 @@ export const ChatInterface = ({
     e.preventDefault();
     if ((!input.trim() && attachedFiles.length === 0) || isStreaming) return;
     
-    let finalInput = input;
-    if (attachedFiles.length > 0) {
-      const filesContext = attachedFiles.map(f => `[Fichier importé : ${f.name}]\n\`\`\`\n${f.content}\n\`\`\``).join('\n\n');
-      finalInput = finalInput ? `${finalInput}\n\n${filesContext}` : filesContext;
-    }
-    
-    onSendMessage(finalInput);
+    onSendMessage(input, attachedFiles);
     setInput('');
     setAttachedFiles([]);
     

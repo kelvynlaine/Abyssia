@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Copy, Check, Edit2, RotateCcw, X, CheckCircle } from 'lucide-react';
+import { Copy, Check, Edit2, RotateCcw, X, CheckCircle, Paperclip } from 'lucide-react';
 
 export const Message = ({ message, isStreaming, onEdit, onRegenerate }) => {
   const isUser = message.role === 'user';
@@ -27,6 +27,16 @@ export const Message = ({ message, isStreaming, onEdit, onRegenerate }) => {
       {isUser ? (
         <>
           <div className="message-user-bubble">
+            {message.attachedFiles && message.attachedFiles.length > 0 && (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: message.content ? '8px' : '0' }}>
+                {message.attachedFiles.map((file, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.2)', padding: '4px 8px', borderRadius: '16px', fontSize: '0.8rem' }}>
+                    <Paperclip size={12} style={{ marginRight: '4px' }} />
+                    <span style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             {isEditing ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '250px' }}>
                 <textarea 

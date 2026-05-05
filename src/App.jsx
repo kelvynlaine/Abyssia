@@ -30,18 +30,29 @@ function App() {
     }
   }, [conversations.length, currentId, createNewConversation]);
 
-  const handleSendMessage = async (content) => {
+  const prepareApiMessages = (messagesList) => {
+    return messagesList.map(m => {
+      let finalContent = m.content || '';
+      if (m.attachedFiles && m.attachedFiles.length > 0) {
+        const filesContext = m.attachedFiles.map(f => `[Fichier importé : ${f.name}]\n\`\`\`\n${f.content}\n\`\`\``).join('\n\n');
+        finalContent = finalContent ? `${finalContent}\n\n${filesContext}` : filesContext;
+      }
+      return { role: m.role, content: finalContent };
+    });
+  };
+
+  const handleSendMessage = async (content, attachedFiles = []) => {
     let convId = currentId;
     if (!convId) {
       convId = createNewConversation();
     }
 
-    const userMessage = { role: 'user', content };
+    const userMessage = { role: 'user', content, attachedFiles };
     addMessage(convId, userMessage);
 
     // Prepare history for API
     const history = currentConversation?.messages || [];
-    const messagesForApi = [...history, userMessage].map(m => ({ role: m.role, content: m.content }));
+    const messagesForApi = prepareApiMessages([...history, userMessage]);
 
     setIsStreaming(true);
     setStreamingContent('');
@@ -72,7 +83,8 @@ function App() {
     const msgIndex = editedConv.messages.findIndex(m => m.id === messageId);
     const history = editedConv.messages.slice(0, msgIndex);
     
-    const messagesForApi = [...history, { role: 'user', content: newContent }].map(m => ({ role: m.role, content: m.content }));
+    const editedMsg = editedConv.messages[msgIndex];
+    const messagesForApi = prepareApiMessages([...history, { ...editedMsg, content: newContent }]);
 
     setIsStreaming(true);
     setStreamingContent('');
@@ -110,7 +122,7 @@ function App() {
     deleteMessageHistoryAfter(currentId, lastUserMsg.id);
 
     const history = conv.messages.slice(0, lastUserMsgIndex);
-    const messagesForApi = [...history, { role: 'user', content: lastUserMsg.content }].map(m => ({ role: m.role, content: m.content }));
+    const messagesForApi = prepareApiMessages([...history, lastUserMsg]);
 
     setIsStreaming(true);
     setStreamingContent('');
